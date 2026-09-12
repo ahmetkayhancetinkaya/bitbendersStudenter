@@ -1,9 +1,12 @@
-node_modules/
-dist/
+node_modules
+dist
+*.local
 .env
 .env.*
 !.env.example
-*.local
+.sites-runtime/
+.artifacts/
+coverage/
 *.log
-*.tsbuildinfo
-.DS_Store
+
+.idea/
