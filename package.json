@@ -1,28 +1,28 @@
 {
-  "name": "kampuskit",
+  "name": "kampuskit-workspace",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "workspaces": ["frontend", "backend", "shared"],
-  "engines": {"node": ">=22.17.0"},
-  "scripts": {
-    "dev": "node scripts/dev.mjs",
-    "dev:frontend": "npm run dev --workspace @kampuskit/frontend",
-    "dev:backend": "npm run dev --workspace @kampuskit/backend",
-    "build": "npm run build --workspace @kampuskit/frontend && npm run build --workspace @kampuskit/backend",
-    "start": "npm run start --workspace @kampuskit/backend",
-    "lint": "oxlint frontend/src backend/src shared/src scripts",
-    "preview": "npm run preview --workspace @kampuskit/frontend",
-    "test": "npm run test --workspaces --if-present",
-    "db:prepare": "npm run db:prepare --workspace @kampuskit/backend",
-    "seed:examples": "npm run seed:examples --workspace @kampuskit/backend",
-    "collect:internships": "npm run collect:internships --workspace @kampuskit/backend",
-    "collect:persist": "npm run collect:persist --workspace @kampuskit/backend",
-    "demo:create": "npm run demo:create --workspace @kampuskit/backend",
-    "test:integration": "npm run test:integration --workspace @kampuskit/backend",
-    "edge:prepare": "npm run edge:prepare --workspace @kampuskit/backend"
+  "engines": {
+    "node": ">=22.17.0"
   },
-  "devDependencies": {
-    "oxlint": "^1.81.0"
+  "scripts": {
+    "install:all": "npm --prefix backend ci && npm --prefix frontend ci",
+    "dev": "node scripts/dev.mjs",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build": "npm --prefix frontend run build && npm --prefix backend run build && node scripts/prepare-hosting.mjs",
+    "start": "npm --prefix backend start",
+    "lint": "npm --prefix frontend run lint && npm --prefix backend run lint",
+    "preview": "npm --prefix frontend run preview",
+    "test": "npm --prefix frontend test && npm --prefix backend test",
+    "contracts:check": "node scripts/check-contracts.mjs",
+    "db:prepare": "npm --prefix backend run db:prepare",
+    "seed:examples": "npm --prefix backend run seed:examples",
+    "collect:internships": "npm --prefix backend run collect:internships",
+    "collect:persist": "npm --prefix backend run collect:persist",
+    "demo:create": "npm --prefix backend run demo:create",
+    "test:integration": "npm --prefix backend run test:integration",
+    "edge:prepare": "npm --prefix backend run edge:prepare"
   }
 }

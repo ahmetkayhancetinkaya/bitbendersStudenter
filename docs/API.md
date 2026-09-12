@@ -23,12 +23,16 @@ API kökü `/api`. Frontend `credentials: include` kullanır. Access/refresh tok
 | GET | /files/:bucket?path=... | Oturum gerektirir; Storage RLS ile görünür dosyanın binary içeriği |
 | POST | /internships/sync | Oturum gerektirir; sabit kaynaklardan import; `{sources}` |
 | POST | /places/nearby | Demo dahil herkese açık; `{lat,lng,radius,category}`, sunucu Places anahtarı |
+| GET | /occupancy/demo | Demo dahil herkese açık; test örnekleri, raporlar ve kaynaklı kapasiteler; model ağırlıkları içermez |
+| POST | /occupancy/predict | Demo dahil herkese açık; `{timestamp,extraEntries?}`; backend'de mevcut an ve +60 dk çıkarımı |
 
 CRUD izin listesi `backend/src/modules/data/validation.ts` içindedir. Katalog, profiles ve reminder_jobs genel CRUD üzerinden değiştirilemez. Bildirimler yalnızca PATCH/read_at destekler. Mekan silme desteklenmez. `id`, `user_id`, `created_at`, `revision`, örnek etiketi ve ithal kaynak alanları API gövdesinden kabul edilmez. RLS ve sütun yetkileri ayrıca uygulanır.
 
 Dosya depoları `notes` (PDF, en fazla 10 MB) ve `listing-images` (JPEG/PNG/WebP, en fazla 5 MB). Backend hem dosya boyutunu hem MIME/imzayı denetler. Dosya yolları kullanıcı UUID'si altında backend'in ürettiği UUID dosya adlarıdır. JSON gövdeleri en fazla 64 KB'dır.
 
 Mekan araması yalnızca cafe/restaurant/library, geçerli koordinatlar ve 500–5000 metre yarıçap kabul eder. En fazla 20 sonuç gelir; bilinmeyen fiyat/puan null kalır. Google sonuçları kalıcı saklanmaz. Üretimde bu herkese açık uç için ağ geçidinde hız/kota sınırı yapılandır.
+
+Yoğunluk tahmini yalnızca demo yanıtındaki kayıt saatlerini (`YYYY-MM-DDTHH:mm:ss`) ve 0–10.000 arasında tam sayı `extraEntries` kabul eder. Varsayılan ek giriş 0'dır. Yanıt `{timestamp,extraEntries,features,nowEstimate,futureEstimate,forecastTime}` biçimindedir. Gelecek saat için test verisi yoksa son iki alan `null` olur. Ham giriş dizileri, kişi sayımları ve başka alanlar girdi olarak kabul edilmez. Supabase veya Python kurulumu gerektirmez. Bu tarihsel ofis veri demosudur; canlı kampüs tahmini değildir. Ayrıntılar [ML rehberinde](ML.md).
 
 Hata biçimi:
 

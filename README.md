@@ -4,15 +4,17 @@ KampüsKit; öğrencilerin ders, kariyer, bütçe, barınma ve kampüs yaşamı 
 
 **[Canlı uygulama](https://kampuskit.arsenalighieri.chatgpt.site/)** · **[Hesapsız demo](https://kampuskit.arsenalighieri.chatgpt.site/#/demo)** · **[Gerçek hesapla giriş](https://kampuskit.arsenalighieri.chatgpt.site/#/giris)**
 
-Bu depo artık yalnızca başlangıç iskeletini değil, çalışan arayüzü, Supabase şemasını, staj toplama kodlarını, örnek içerik üretimini, testleri ve ayrıntılı kurulum belgelerini içerir. API anahtarları ve demo hesabının şifresi kaynak kodda bulunmaz. Kod npm workspaces ile frontend, backend ve shared paketlerine ayrılmıştır; Supabase erişimi backend üzerinden gerçekleşir.
+Bu çalışma klasörü çalışan arayüzü, Supabase şemasını, staj toplama kodlarını, örnek içerik üretimini, testleri ve kurulum belgelerini içerir. Frontend ve backend artık kendi kilit dosyaları, yerel ortak paketleri ve CI kontrolleri bulunan iki bağımsız Git reposudur. Supabase erişimi backend üzerinden gerçekleşir. [Repo ayrımı ve bağımsız kurulum](docs/REPOSITORIES.md).
 
 ## Ayrıntılı belgeler
 
 | Belge | İçerik |
 |---|---|
+| [Bağımsız repolar](docs/REPOSITORIES.md) | Frontend/backend Git repoları, ayrı kurulum ve API bağlantısı |
 | [Kurulum ve Supabase](docs/SETUP.md) | Yerel ortam, migrationlar, Auth, Storage, SMTP ve demo hesabı |
 | [Mimari ve veri modeli](docs/ARCHITECTURE.md) | Bileşenler, tablolar, veri akışı ve erişim kuralları |
 | [Backend API](docs/API.md) | Uçlar, oturum çerezleri, istek sözleşmeleri ve hata durumları |
+| [Yoğunluk ML entegrasyonu](docs/ML.md) | Backend modelleri, kapasite senaryoları, testler ve yeniden eğitim |
 | [Staj ve Maps entegrasyonları](docs/INTEGRATIONS.md) | Kaynaklar, algoritmalar, Google Cloud ve zamanlama |
 | [Testler ve demo senaryosu](docs/TESTING.md) | Kabul kontrolleri, doğrulanmış davranışlar ve sınırlar |
 | [Katkı rehberi](CONTRIBUTING.md) | Geliştirme düzeni, yeni modül ve veri kaynağı ekleme |
@@ -83,13 +85,15 @@ Kişisel tarihler oluşturulur, düzenlenir, silinir ve tamamlandı işaretlenir
 
 Öğrenciler kütüphane/yemekhane için sakin, orta veya kalabalık bildirimi bırakır. Son bir saat içinde her öğrencinin yalnızca son bildirimi sayılır. Katılımcı sayısı, dağılım ve son güncelleme zamanı gösterilir. Güncel rapor yoksa “Veri yok” yazılır; sensör ölçümü veya resmi okul verisi izlenimi verilmez.
 
+**Yoğunluk tahmini · ML** sekmesinde geçmiş COD ofis kayıtları üzerinden mevcut an ve bir saat sonrası Random Forest tahmini denenir. Modeller backend'de çalışır. Şehir/mekân filtreleri, resmî kapasiteye göre manuel senaryolar ve kütüphane sınav haftası varsayımı vardır. Bu açıkça etiketlenmiş bir veri demosudur; canlı kampüs ölçümü değildir. [ML entegrasyonu ve eğitim rehberi](docs/ML.md).
+
 ## Teknik yapı
 
 | Katman | Teknoloji | Amaç |
 |---|---|---|
 | Arayüz | React, TypeScript | Bileşenler ve tipli veri modeli |
 | Backend | Node.js / Cloudflare Worker, TypeScript | /api, oturum, CRUD, dosya ve harici servisler |
-| Ortak paket | shared | Veri tipleri, API sözleşmeleri ve saf kurallar |
+| Ortak paket | Her repoda packages/shared | Sürümlenmiş yerel veri tipleri, API sözleşmeleri ve saf kurallar |
 | Derleme | Vite | Ayrı frontend ve Worker çıktısı |
 | Stil | Tailwind CSS, proje CSS’i | Mobil uyum ve ortak görsel dil |
 | Yönlendirme | React Router / HashRouter | Statik sunucuda bağlantı yenileme |
@@ -98,16 +102,17 @@ Kişisel tarihler oluşturulur, düzenlenir, silinir ve tamamlandı işaretlenir
 | Dosya | Supabase Storage | Özel PDF ve görsel depoları |
 | Harita | Maps JavaScript API, Places API (New) | Yakın mekan araması ve harita |
 | Toplayıcı | Lever, Greenhouse | Altı şirket panosundan staj keşfi |
+| Yoğunluk ML | Backend TypeScript, Python/scikit-learn eğitim araçları | Mevcut an ve +60 dakika Random Forest tahmini |
 | Test | Node test runner, PGlite | Ayrıştırma, sıralama ve veritabanı kuralları |
 
 ## Hızlı başlangıç
 
 Node.js 24 önerilir; scraper testlerinde TypeScript modülleri doğrudan çalıştırılır.
 
+Bağımsız kurulum için [frontend README](frontend/README.md) ve [backend README](backend/README.md) belgelerini kullan. İki repo bu çalışma klasöründe hazırsa üst dizinde:
+
 ```bash
-git clone https://github.com/ahmetkayhancetinkaya/bitbendersStudenter.git
-cd bitbendersStudenter
-npm ci
+npm run install:all
 ```
 
 `frontend/.env.example` → `frontend/.env.local`, `backend/.env.example` → `backend/.env.local` olarak kopyala. Supabase URL ve anahtarlarını yalnızca backend ortamına gir. Google harita tarayıcı anahtarı frontend’de, Places sunucu anahtarı backend’de tutulur. Ayrıntılar [kurulum rehberinde](docs/SETUP.md).
@@ -135,4 +140,4 @@ Hesapta 10 gelir/gider hareketi, 6 kişisel tarih, kulüp takibi, üç kaydedilm
 
 ## Kapsam ve sınırlar
 
-Okul sistemlerine resmi bağlantı, otomatik öğrencilik doğrulaması, ödeme, sohbet, yapay zeka, tarayıcı push bildirimi ve canlı sensör verisi yoktur. Gerçek e-posta hatırlatması için Resend/SMTP ile gönderim işçisi tamamlanmalıdır. Google ve ilan sağlayıcılarının erişimi, kotaları ve kaynak yapıları dış bağımlılıklardır. Başarısız işlemler başarılı gibi gösterilmez.
+Okul sistemlerine resmi bağlantı, otomatik öğrencilik doğrulaması, ödeme, sohbet, tarayıcı push bildirimi ve canlı sensör verisi yoktur. ML yoğunluk demosu ofis verisiyle sınırlıdır. Gerçek e-posta hatırlatması için Resend/SMTP ile gönderim işçisi tamamlanmalıdır. Google ve ilan sağlayıcılarının erişimi, kotaları ve kaynak yapıları dış bağımlılıklardır. Başarısız işlemler başarılı gibi gösterilmez.

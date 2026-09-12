@@ -10,13 +10,13 @@ Ekran ve bileşenler frontend/src içindedir; ağ çağrılarını frontend/src/
 
 ## Yeni özellik ekleme
 
-Önce özelliğin ortak mı kişisel mi veri tuttuğunu belirle. `shared/src/types.ts` tiplerini güncelle; gerekiyorsa backend/supabase/migrations içinde yeni migration ekle. Daha önce uygulanmış migrationı sessizce değiştirmek yerine yeni dosya oluştur. İlgili RLS ve sütun yetkilerini arayüzden önce düşün: yalnızca buton gizlemek sahiplik denetimi sağlamaz.
+Önce özelliğin ortak mı kişisel mi veri tuttuğunu belirle. İlgili repoda `packages/shared/src/types.ts` tiplerini güncelle; API sözleşmesi değişiyorsa diğer reponun snapshot ve paket sürümünü de güncelle. Gerekiyorsa backend/supabase/migrations içinde yeni migration ekle. Daha önce uygulanmış migrationı sessizce değiştirmek yerine yeni dosya oluştur. İlgili RLS ve sütun yetkilerini arayüzden önce düşün: yalnızca buton gizlemek sahiplik denetimi sağlamaz.
 
 Sayfa mevcut `PageHead`, `Modal`, `Field`, `ErrorBox` ve `useFormAction` bileşenlerini kullanabilir. Hata olduğunda kullanıcı girdisini koru. Kaydetme sürerken tekrar gönderimi engelle. Boş, yükleniyor ve hata durumlarını ekle. Form başarılı olmadan kapatma veya başarı bildirimi gösterme.
 
 ## İçerik ve örnek veri
 
-Temsili veriyi `shared/src/seed.ts` veya `shared/src/seed-extra.ts` içinde açık örnek etiketiyle üret. Gerçek bir işletme, kişi veya resmi etkinlik adına uydurma ilan oluşturma. Örnek hesap yazarları için `members` kimliği yeterlidir; her örnek kişi için Auth hesabı yaratma. Canlı yoğunluk tablosuna yapay taze bildirim doldurma.
+Temsili veriyi ilgili reponun `packages/shared/src/seed.ts` veya `packages/shared/src/seed-extra.ts` dosyasında açık örnek etiketiyle üret; iki snapshot'u eşleştir. Gerçek bir işletme, kişi veya resmi etkinlik adına uydurma ilan oluşturma. Örnek hesap yazarları için `members` kimliği yeterlidir; her örnek kişi için Auth hesabı yaratma. Canlı yoğunluk tablosuna yapay taze bildirim doldurma.
 
 Fiyatları kuruş, saatli tarihleri UTC sakla. Üniversite ve kampüs ilişkilerini tutarlı kur. Yeni koordinatın kaynağını kaydet. Örnek ders kodlarını resmi üniversite katalog verisi gibi sunma. Kullanıcı tarafından açıkça girilmeyen hesap iletişim bilgisini ilanlara ekleme.
 

@@ -6,7 +6,9 @@ React arayüzü yalnızca backend'in /api uçlarına istek gönderir. Backend ot
 
 Tarayıcı → frontend/src/services → backend/src/app.ts → ilgili modules/*/routes.ts → Supabase / harici sağlayıcı.
 
-StoreProvider yalnızca arayüz durumu, yükleme, bildirim ve veri yenilemesini yönetir. Supabase SDK frontend bağımlılığı değildir. Frontend, backend kaynaklarını import etmez. Paylaşılan veri tipleri, API sözleşmeleri, saf para/tarih kuralları ve örnek veri shared paketindedir.
+Frontend ve backend bağımsız Git repolarıdır; her biri kendi kilit dosyası, CI ve packages/shared snapshot'unu içerir. Ayrıntılar [repo rehberinde](REPOSITORIES.md).
+
+StoreProvider yalnızca arayüz durumu, yükleme, bildirim ve veri yenilemesini yönetir. Supabase SDK frontend bağımlılığı değildir. Frontend, backend kaynaklarını import etmez. Paylaşılan veri tipleri, API sözleşmeleri, saf kurallar ve örnek veri her repoda packages/shared paketinde sürümlenir.
 
 Demo bellekte etiketli örnekleri gösterir. /api/public/internships yalnızca dar kapsamlı public_imported_internships RPC'sini çağırır. Demo formları gerçek kayıt oluşturmaz. Supabase yapılandırılmamışken demo yine kullanılabilir.
 
@@ -16,13 +18,14 @@ Demo bellekte etiketli örnekleri gösterir. /api/public/internships yalnızca d
 frontend/
   src/components/          Ortak arayüz, form, gezinme ve Auth ekranları
   src/pages/               Modül ekranları
+  src/features/occupancy/  Yoğunluk ML ekranı, grafik ve kapasite senaryoları
   src/services/            HTTP istemcisi, auth ve veri API çağrıları
   src/lib/                 React store, harita yükleyici ve sıralama
   public/                  Statik görseller
   vite.config.ts           /api proxy ve frontend derlemesi
 backend/
   src/app.ts               API yönlendirme, CORS/CSRF ve ortak hata yanıtı
-  src/server.ts            Node HTTP adaptörü ve üretimde frontend sunumu
+  src/server.ts            Yalnızca API sunan Node HTTP adaptörü
   src/worker.ts            Cloudflare Worker adaptörü
   src/config/              Ortam ayarları ve doğrulama
   src/http/                JSON, sınırlı gövde okuma, hatalar ve çerezler
@@ -32,10 +35,13 @@ backend/
   src/modules/storage/     Özel dosya erişimi, boyut ve içerik kontrolü
   src/modules/internships/ Sabit kaynaklardan toplama ve kalıcı yazma
   src/modules/places/      Google Places REST isteği
+  src/modules/occupancy/   Random Forest çıkarımı, modeller ve demo API
+  ml/                      İsteğe bağlı Python eğitim ve veri hazırlama araçları
   scripts/                 Yönetim, seed ve entegrasyon araçları
   supabase/                Migrationlar, katalog ve isteğe bağlı Edge uyumluluğu
   tests/                   API, RLS ve kaynak adaptörü testleri
-shared/src/                Tipler, API sözleşmeleri, saf kurallar ve örnekler
+frontend/packages/shared/  Frontend yerel ortak paket snapshot'u
+backend/packages/shared/   Backend yerel ortak paket snapshot'u
 scripts/dev.mjs            İki geliştirme sürecini birlikte başlatır
 docs/                      Kurulum, mimari ve test rehberleri
 dist/client/               Üretilmiş frontend
@@ -81,7 +87,7 @@ Google haritasını çizmek için Maps JavaScript SDK tarayıcıda kalır. Mekan
 
 ## Sayısal ve zamansal kurallar
 
-Para tam sayı kuruş, saatli tarihler UTC'dir; arayüz Europe/Istanbul kullanır. Ortak saf kurallar shared/src/domain.ts içindedir. Kritik girdiler API'de ve veritabanı kısıtlarıyla yeniden doğrulanır. Yoğunluk hesabı bir saatten eski ve gelecekteki kayıtları dışlar; her kişinin yalnızca son raporunu sayar.
+Para tam sayı kuruş, saatli tarihler UTC'dir; arayüz Europe/Istanbul kullanır. Ortak saf kurallar packages/shared/src/domain.ts içindedir. Kritik girdiler API'de ve veritabanı kısıtlarıyla yeniden doğrulanır. Yoğunluk hesabı bir saatten eski ve gelecekteki kayıtları dışlar; her kişinin yalnızca son raporunu sayar.
 
 ## Hatalar ve yarış durumları
 
@@ -93,9 +99,7 @@ Takvim revizyonu, önceki işi iptal etme, claim/lease ve idempotent payload SQL
 
 Veriler mevcut hackathon kapsamını korumak için toplu yenilenir. Büyüyen içerikte sayfalama ve modül bazlı yenileme eklenmelidir. Çoklu Node süreçleri/Worker isolate'ları arasında refresh eşgüdümü paylaşımlı değildir; Supabase token yeniden kullanım davranışı geçerlidir. Üretimde özellikle herkese açık Places ve hesap uçlarına reverse proxy/Cloudflare düzeyinde hız ve kota sınırları uygulanmalıdır. Periyodik staj toplama ayrıca zamanlayıcı gerektirir.
 
-<<<<<<< HEAD
 Kaynaklar: [Supabase server auth](https://supabase.com/docs/guides/auth/server-side/advanced-guide), [PKCE](https://supabase.com/docs/guides/auth/sessions/pkce-flow), [Google Places REST](https://developers.google.com/maps/documentation/places/web-service/nearby-search).
-=======
 Takvim değişikliği bir revizyon üretir. Önceki bekleyen iş iptal edilir; tamamlanan veya silinen tarih gönderime uygun değildir. Claim işlemi lease ve kilit kullanır. Gönderim payload’ı ilk hazırlamada sabitlenir; yeniden denemede farklı içerikle aynı idempotency anahtarının kullanılması önlenir.
 
 Bu SQL altyapısı test edilmiştir ancak dış e-posta işçisi ve gerçek teslim testi bu sürümde yoktur. `sent` durumu yalnızca sağlayıcının doğrulanmış başarılı yanıtı sonrasında yazılmalıdır. Servis kurulmadan e-posta özelliği açık gösterilmemelidir.
@@ -105,4 +109,3 @@ Bu SQL altyapısı test edilmiştir ancak dış e-posta işçisi ve gerçek tesl
 Hackathon ölçeğinde ortak tablolar toplu yenilenir. Çok sayıda kullanıcı için sunucu tarafı sayfalama, üniversiteye göre sorgu daraltma ve seçili tablo yenilemesi eklenmelidir. Şu an polling kullanılır; gerçek zamanlı abonelik zorunlu değildir. Google araması en fazla 20 sonuç döndürür ve kapsamlı bir şehir işletme envanteri sayılmaz.
 
 Giriş ekranının servis kontrolü geçici hatalarda üç kez denenir; yine erişilemiyorsa kullanıcı form girdisini kaybetmeden yeniden deneyebilir. Bağlantı hatası veritabanı kesinlikle kurulmamış gibi yorumlanmaz.
->>>>>>> 9559dcc3907dbbd385d082e7812eacaf6968ac0f

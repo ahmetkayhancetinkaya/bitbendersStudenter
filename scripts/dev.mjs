@@ -3,7 +3,7 @@ import {fileURLToPath} from 'node:url'
 const root=fileURLToPath(new URL('..',import.meta.url))
 const npmCli=process.env.npm_execpath
 if(!npmCli)throw new Error('Start with npm run dev.')
-const children=['@kampuskit/backend','@kampuskit/frontend'].map(workspace=>spawn(process.execPath,[npmCli,'run','dev','--workspace',workspace],{cwd:root,stdio:'inherit'}))
+const children=['backend','frontend'].map(directory=>spawn(process.execPath,[npmCli,'--prefix',directory,'run','dev'],{cwd:root,stdio:'inherit'}))
 let stopping=false
 function stop(code=0){
   if(stopping)return

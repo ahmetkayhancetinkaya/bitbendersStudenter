@@ -10,6 +10,10 @@
 | backend/tests/database.test.mjs | Üç hesapta bütçe izolasyonu, ortak içerik, sahiplik, özel dosyalar, takvim revizyonu, claim kilidi, kaynak alanı koruması |
 | backend/tests/internships.test.mjs | Staj sözcük sınıflaması, bilinmeyen alanlar, güvenli kaynak URL’leri, sayfalama, tekrarlar ve hatalı besleme |
 | frontend/place-ranking.test.mjs | Haversine metre hesabı, eksik fiyat, ücretsiz seviye, fiyat/mesafe etkisi ve az yorum düzeltmesi |
+| backend/tests/occupancy.test.mjs | 2.103 mevcut ve 1.955 gelecek Python tahmini, giriş pencereleri, zaman sızıntısı, kapsam boşlukları, simülasyon ve public ML API |
+| frontend/occupancy.test.mjs | Kapasite eşikleri, kapasite üstü oranlar ve yalnızca kütüphaneye uygulanan sınav senaryosu |
+
+ML entegrasyonu sonrası `npm test` ile 40 test geçti. `python -m unittest discover -s backend/ml -p test_forecast.py` ile tam +60 dakika hedef eşleştirmesine ait 2 test ayrıca geçti. Önceden eğitilmiş modellerin web çalışma zamanı Python gerektirmez. Yerel HTTP/API proxy, lisans dosyası, derlenmiş Worker tahmini ve model ağırlıklarının frontend paketinde bulunmaması da kontrol edildi. Tarayıcı görsel/etkileşim testi ve yeniden eğitim yapılmadı. [ML rehberi](ML.md).
 
 Yeni backend API testleri sağlayıcı isteklerini fixture ile taklit eder; gerçek Supabase/Google erişimi veya e-posta teslimi kanıtı değildir. Node üst test grubunu da test sayısına dahil eder. `npm run build` ayrıca TypeScript kontrolünü ve üretim derlemesini yapar. `npm run lint` proje lint aracını çalıştırır.
 

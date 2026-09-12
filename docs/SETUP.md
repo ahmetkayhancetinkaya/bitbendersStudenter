@@ -2,7 +2,7 @@
 
 ## Yerel geliştirme
 
-Node.js 24 önerilir (en az 22.17, açık TypeScript strip flag'iyle). Depo kökünde npm ci çalıştır. npm workspaces frontend, backend ve shared bağımlılıklarını tek package-lock.json ile kurar.
+Node.js 24 önerilir (en az 22.17, açık TypeScript strip flag'iyle). İki bağımsız Git reposunun her birinde npm ci çalıştır; her repo kendi package-lock.json dosyasını kullanır. Üst çalışma klasöründe npm run install:all ikisini birlikte kurar. [Repo rehberi](REPOSITORIES.md).
 
 frontend/.env.example dosyasını frontend/.env.local, backend/.env.example dosyasını backend/.env.local olarak kopyala. Eski kök .env.local / .env.server.local düzeni kullanılmaz. Supabase değerlerini VITE_ değişkenlerine ekleme.
 
@@ -35,7 +35,7 @@ npm run lint
 npm run build
 ```
 
-npm run dev iki servisi birlikte açar: http://127.0.0.1:5173 arayüz, http://127.0.0.1:3001 API. Vite /api isteklerini backend'e aktarır. İstersen dev:frontend ve dev:backend komutlarını ayrı terminallerde çalıştır. Supabase ayarları olmadan hesapsız demo çalışır; gerçek kayıt/giriş için backend ve şema kurulmalıdır.
+Üst çalışma klasöründe npm run dev iki servisi birlikte açar; her repo içinde npm run dev yalnızca kendi servisini açar: http://127.0.0.1:5173 arayüz, http://127.0.0.1:3001 API. Vite /api isteklerini backend'e aktarır. İstersen dev:frontend ve dev:backend komutlarını ayrı terminallerde çalıştır. Supabase ayarları olmadan hesapsız demo çalışır; gerçek kayıt/giriş için backend ve şema kurulmalıdır.
 
 APP_ORIGIN tam origin olmalı; sonunda / bulunmamalı. localhost ve 127.0.0.1 farklıdır. Adresi değiştirirsen APP_ORIGIN, tarayıcı adresi ve Supabase redirect izinlerini birlikte değiştir. Preview portu kullanırken APP_ORIGIN değerini o portla eşleştir. Ortam değiştiğinde backend'i yeniden başlat.
 
@@ -85,7 +85,7 @@ Not dosyası, ilişkili yayınlanmış paylaşımı okuyabilen oturuma açılır
 
 npm run build dist/client (arayüz) ve dist/server/index.js (Worker API) üretir. Yalnızca statik frontend yayınlamak gerçek hesap/veri işlemleri için yeterli değildir.
 
-Node sunucusu için NODE_ENV=production, APP_ORIGIN=https://YOUR_SITE ve uygun HOST/PORT değerlerini yapılandırıp npm start çalıştır. HTTPS reverse proxy üzerinden /api ve statik arayüz aynı origin'de sunulur. Node adaptörü dist/client dosyalarını da sunar. Backend ortam değerleri runtime'da okunur; VITE_ değerleri derleme anındadır.
+Node sunucusu için NODE_ENV=production, APP_ORIGIN=https://YOUR_SITE ve uygun HOST/PORT değerlerini yapılandırıp npm start çalıştır. HTTPS reverse proxy üzerinden /api ve statik arayüz aynı origin'de sunulur. Node adaptörü yalnızca API sunar; statik frontend ayrı sunucuda bulunur. Backend ortam değerleri runtime'da okunur; VITE_ değerleri derleme anındadır.
 
 Cloudflare/Sites için dist/server/index.js default fetch handler'ı, ASSETS binding'iyle dist/client ve runtime Supabase/Google ortam değerleri gerekir. .openai/hosting.json mevcut proje kimliğini korur; static:null API'nin de yayınlanması gerektiğini belirtir. Sırlar manifest veya frontend paketine eklenmez. Bu depoyu klonlamak mevcut Sites/Supabase proje yetkisini vermez.
 

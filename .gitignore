@@ -10,6 +10,15 @@ dist
 .sites-runtime/
 .artifacts/
 coverage/
+backend/ml/.venv/
+backend/ml/__pycache__/
+backend/ml/data/
+backend/ml/artifacts/*.csv
+backend/ml/artifacts/*.joblib
 *.log
 
 .idea/
+
+# Independent Git repositories; the parent retains only coordination files.
+/frontend/
+/backend/
