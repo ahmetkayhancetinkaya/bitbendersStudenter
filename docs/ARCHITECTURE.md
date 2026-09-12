@@ -89,3 +89,5 @@ Bu SQL altyapısı test edilmiştir ancak dış e-posta işçisi ve gerçek tesl
 ## Ölçek sınırları
 
 Hackathon ölçeğinde ortak tablolar toplu yenilenir. Çok sayıda kullanıcı için sunucu tarafı sayfalama, üniversiteye göre sorgu daraltma ve seçili tablo yenilemesi eklenmelidir. Şu an polling kullanılır; gerçek zamanlı abonelik zorunlu değildir. Google araması en fazla 20 sonuç döndürür ve kapsamlı bir şehir işletme envanteri sayılmaz.
+
+Giriş ekranının servis kontrolü geçici hatalarda üç kez denenir; yine erişilemiyorsa kullanıcı form girdisini kaybetmeden yeniden deneyebilir. Bağlantı hatası veritabanı kesinlikle kurulmamış gibi yorumlanmaz.
