@@ -1,61 +1,67 @@
 # Kurulum ve Supabase
 
-## Yerel ortam ve anahtarlar
+## Yerel geliştirme
 
-Node.js 24 ve Git kurulu olmalıdır. `npm ci` bağımlılık kilidini kullanır. `.env.local` istemci değerlerini, `.env.server.local` yalnızca yerel yönetim komutlarının sırlarını içerir. İkisi de Git dışında tutulur.
+Node.js 24 önerilir (en az 22.17, açık TypeScript strip flag'iyle). Depo kökünde npm ci çalıştır. npm workspaces frontend, backend ve shared bağımlılıklarını tek package-lock.json ile kurar.
 
-`.env.local`:
+frontend/.env.example dosyasını frontend/.env.local, backend/.env.example dosyasını backend/.env.local olarak kopyala. Eski kök .env.local / .env.server.local düzeni kullanılmaz. Supabase değerlerini VITE_ değişkenlerine ekleme.
 
 ```dotenv
-VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
-VITE_GOOGLE_MAPS_API_KEY=YOUR_RESTRICTED_BROWSER_KEY
+# frontend/.env.local
+VITE_API_BASE_URL=/api
+API_PROXY_TARGET=http://127.0.0.1:3001
+VITE_GOOGLE_MAPS_API_KEY=YOUR_RESTRICTED_BROWSER_MAPS_KEY
+VITE_EMAIL_REMINDERS_ENABLED=false
 ```
 
-`.env.server.local`:
-
 ```dotenv
+# backend/.env.local
+PORT=3001
+HOST=127.0.0.1
+APP_ORIGIN=http://127.0.0.1:5173
+NODE_ENV=development
 SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVER_SECRET
+GOOGLE_PLACES_API_KEY=YOUR_SERVER_PLACES_KEY
 ```
 
-Publishable anahtar istemci içindir. `sb_secret_...` veya legacy service_role anahtarı sunucu yetkisidir; frontend’e eklenmez. Google tarayıcı anahtarı görünür olduğundan HTTP referrer ve API kısıtlarıyla korunur. Kendi projen için kendi anahtarlarını kullan; bu depoda canlı anahtar yoktur.
+SUPABASE_ANON_KEY eski projeler için publishable anahtara alternatif olarak desteklenir. Normal kullanıcı işlemlerinde yalnızca publishable anahtar ve kullanıcının JWT'si kullanılır. Service-role staj importu ve yönetim scriptleri için gereklidir. Bu depoda gerçek anahtar bulunmaz.
+
+```bash
+npm run dev
+npm test
+npm run lint
+npm run build
+```
+
+npm run dev iki servisi birlikte açar: http://127.0.0.1:5173 arayüz, http://127.0.0.1:3001 API. Vite /api isteklerini backend'e aktarır. İstersen dev:frontend ve dev:backend komutlarını ayrı terminallerde çalıştır. Supabase ayarları olmadan hesapsız demo çalışır; gerçek kayıt/giriş için backend ve şema kurulmalıdır.
+
+APP_ORIGIN tam origin olmalı; sonunda / bulunmamalı. localhost ve 127.0.0.1 farklıdır. Adresi değiştirirsen APP_ORIGIN, tarayıcı adresi ve Supabase redirect izinlerini birlikte değiştir. Preview portu kullanırken APP_ORIGIN değerini o portla eşleştir. Ortam değiştiğinde backend'i yeniden başlat.
 
 ## Veritabanı
 
-Yeni Supabase projesinde SQL Editor üzerinden sırayla uygula:
+Yeni Supabase projesinde sırasıyla uygula:
 
-1. `supabase/migrations/202609120001_core.sql`
-2. `supabase/migrations/202609120002_discovery.sql`
-3. `supabase/migrations/202609120003_campus_discovery.sql`
-4. `supabase/seed-catalog.sql`
+1. backend/supabase/migrations/202609120001_core.sql
+2. backend/supabase/migrations/202609120002_discovery.sql
+3. backend/supabase/migrations/202609120003_campus_discovery.sql
+4. backend/supabase/seed-catalog.sql
 
-Çekirdek dosya tablolar, RLS, özel bucket’lar ve hatırlatma kuyruğunu kurar. İkinci dosya kullanıcı stajları, kaynak bilgileri, mekan önerileri ve toplama kilidini ekler. Üçüncü dosya kampüs referans konumlarını ve sadece şirketlerden alınan ilanları anonime açan sınırlı demo fonksiyonunu ekler. Katalog üniversite, kampüs, ders ve yoğunluk alanlarını oluşturur.
+npm run db:prepare tüm migrationları ve katalog seed'ini backend/.artifacts/install-supabase.sql içinde birleştirir. Bu dosya boş proje içindir; kurulu projede çekirdek migrationları tekrar çalıştırma. Katalog seed'i tekrar çalıştırılabilir. Schema/RLS değiştirilmedi; frontend/backend ayrımı yeni bir migration gerektirmez.
 
-`npm run db:prepare`, tüm migrationları ve katalog seed’ini `.artifacts/install-supabase.sql` içinde birleştirir. Bu dosya boş proje içindir. Kurulu projede çekirdek migrationları tekrar çalıştırma; yalnızca uygulanmamış migrationları uygula. Katalog seed’i tekrar çalıştırılabilir. CLI kullanırken dashboard’da uygulanmış migrationların geçmişini eşitlemeden `supabase db push` çalıştırma.
-
-Kurulum kontrolü:
-
-```sql
-select public.app_status();
-```
-
-Beklenen yanıt `kampuskit-20260912`. Giriş ekranı aynı sorguyu kullanır. Bu işaret Google veya SMTP’nin kurulduğunu kanıtlamaz.
+GET /api/health configured ve databaseReady durumunu döndürür; ikinci değer public.app_status RPC'sinden gelir. SMTP veya Google hazırlığını kanıtlamaz.
 
 ## Auth dönüş adresleri
 
-Authentication → URL Configuration içinde Site URL’yi yayınlanan kök adres olarak ayarla. Redirect izinlerine kök adresi ve `?flow=recovery` biçimini ekle. Yerelde localhost ve 127.0.0.1 farklı origin’lerdir.
+Supabase Authentication → URL Configuration: Site URL uygulamanın kök adresi, Redirect URLs ise backend callback'i olmalı. SDK akış kimliği query parametresi eklediği için sadece callback yoluna ait query desenini izin listesine ekle:
 
 ```text
-https://YOUR_SITE/
-https://YOUR_SITE/?flow=recovery
-http://localhost:5173/
-http://localhost:5173/?flow=recovery
-http://127.0.0.1:5173/
-http://127.0.0.1:5173/?flow=recovery
+http://127.0.0.1:5173/api/auth/callback**
+https://YOUR_SITE/api/auth/callback**
 ```
 
-PKCE callback’i bir kez tüketilir. Parola kurtarma işareti query string’de tutularak hash yönlendirmesiyle çakışma azaltılır. Doğrulamadan sonra kullanıcı ad, üniversite ve bölümünü tamamlar. Üniversite seçimi resmi öğrencilik kanıtı değildir.
+Callback kodu backend'de HttpOnly PKCE verifier çerezleriyle tek sefer tüketilir. Kayıt doğrulaması /#/app, kurtarma /#/sifre-yenile yoluna döner. Bağlantıyı işlemi başlattığın tarayıcıda aç. Başka bir tarayıcı PKCE verifier'ına sahip değildir. Eski doğrudan Supabase tarayıcı oturumları taşınmaz; geçişten sonra yeniden giriş yapılır.
 
 ## E-posta ve SMTP
 
@@ -65,7 +71,7 @@ Mevcut sürümde gerçek e-posta hatırlatma işçisi yoktur. `reminder_jobs` ve
 
 ## Dosyalar
 
-`notes` ve `listing-images` bucket’ları özeldir. PDF limiti 10 MB, JPEG/PNG/WebP limiti 5 MB’dır. Yol biçimi kullanıcı kimliği ile başlar. İstemci doğrulaması hızlı geri bildirim verir; sunucu politikaları ve bucket limitleri ikinci denetim katmanıdır.
+`notes` ve `listing-images` bucket’ları özeldir. PDF limiti 10 MB, JPEG/PNG/WebP limiti 5 MB’dır. Yol biçimi kullanıcı kimliği ile başlar. İstemci doğrulaması hızlı geri bildirim verir; backend boyut/MIME/dosya imzasını yeniden denetler; RLS politikaları ve bucket limitleri ayrıca uygulanır.
 
 Not dosyası, ilişkili yayınlanmış paylaşımı okuyabilen oturuma açılır. Paylaşıma bağlanmamış dosya başka hesaplara açık değildir. Özel dosyalar için kalıcı herkese açık URL yerine oturumla indirme kullanılır. Kullanıcı iletişim e-postası kendi yazdığı ilan alanından alınır; hesap e-postası otomatik eklenmez.
 
@@ -73,24 +79,28 @@ Not dosyası, ilişkili yayınlanmış paylaşımı okuyabilen oturuma açılır
 
 `npm run seed:examples`, ortak örnek kayıtları sabit kimliklerle upsert eder. Kullanıcıların gerçek kayıtlarını silmez. Örnek tarihleri prova gününe göre yenileyebilir. Google sonuçlarını veritabanına kopyalamaz, gerçek yoğunluk tablosuna yapay rapor göndermez, normal hesaplara bütçe/takvim doldurmaz.
 
-`npm run demo:create`, ayrı bir gerçek demo hesabı ve ona özel bütçe/takvim kayıtları oluşturur. `.artifacts/demo-account.json` mevcutsa aynı hesabı kullanır. Dosyayı silmek uzak hesabı silmez. Script sonuçları normal kullanıcı oturumu açarak kontrol eder. Demo şifresi Git dışında tutulur.
+`npm run demo:create`, ayrı bir gerçek demo hesabı ve ona özel bütçe/takvim kayıtları oluşturur. `backend/.artifacts/demo-account.json` mevcutsa aynı hesabı kullanır. Dosyayı silmek uzak hesabı silmez. Script sonuçları normal kullanıcı oturumu açarak kontrol eder. Demo şifresi Git dışında tutulur.
 
-## Yayın
+## Üretim ve yayın
 
-`npm run build` statik `dist/` üretir. HashRouter sayesinde `/#/app/mekanlar` yenilendiğinde sunucunun ayrı route tanımlaması gerekmez. Vite ortam değerleri derleme anında pakete girer; anahtar değişikliğinden sonra yeniden build gerekir.
+npm run build dist/client (arayüz) ve dist/server/index.js (Worker API) üretir. Yalnızca statik frontend yayınlamak gerçek hesap/veri işlemleri için yeterli değildir.
 
-`.openai/hosting.json` mevcut Sites projesinin kimliğidir. Başka bir hesapta yeni site kuruyorsan kendi Sites proje kimliğini kullan. Depoyu klonlamak backend yönetim yetkisi vermez; geliştirme için kendi Supabase projen ve ortamın gerekir.
+Node sunucusu için NODE_ENV=production, APP_ORIGIN=https://YOUR_SITE ve uygun HOST/PORT değerlerini yapılandırıp npm start çalıştır. HTTPS reverse proxy üzerinden /api ve statik arayüz aynı origin'de sunulur. Node adaptörü dist/client dosyalarını da sunar. Backend ortam değerleri runtime'da okunur; VITE_ değerleri derleme anındadır.
+
+Cloudflare/Sites için dist/server/index.js default fetch handler'ı, ASSETS binding'iyle dist/client ve runtime Supabase/Google ortam değerleri gerekir. .openai/hosting.json mevcut proje kimliğini korur; static:null API'nin de yayınlanması gerektiğini belirtir. Sırlar manifest veya frontend paketine eklenmez. Bu depoyu klonlamak mevcut Sites/Supabase proje yetkisini vermez.
+
+Frontend'i farklı origin'de sunmak gerekirse VITE_API_BASE_URL backend'in /api adresini, APP_ORIGIN frontend adresini göstermeli; frontend origin'indeki /api/auth/callback yolu da backend'e yönlendirilmelidir. Tercih edilen yapı aynı origin'dir; farklı siteler arasında SameSite=Lax çerezleri gönderilmez. Farklı site kurulumu çerez/CSRF tasarımının ayrıca değerlendirilmesini gerektirir.
 
 ## Sorun giderme
 
 | Sorun | Kontrol |
 |---|---|
-| Giriş kurulum bekliyor | Supabase URL/key, core migration, app_status |
-| Doğrulama e-postası yok | SMTP, alan adı DNS, gönderim kotası, alıcı kısıtı |
-| Callback yanlış sayfada | Site URL, redirect allowlist ve origin |
-| Kayıt hatası | Oturum, profil, RLS ve form alanları |
-| Maps hatası | İki Google API’si, referrer, kota, faturalandırma |
-| Staj yenilenmiyor | Fonksiyon yayını, JWT, ingestion_runs ve bir saatlik kilit |
-| Dosya açılamıyor | Paylaşım görünürlüğü, bucket ve dosya sahipliği |
+| Giriş kurulum bekliyor | Backend çalışıyor mu, /api/health, Supabase URL/key, app_status |
+| 403 Origin/CSRF | APP_ORIGIN ile tarayıcı origin'i birebir eşleşmeli |
+| Doğrulama/kurtarma bağlantısı | Callback izin deseni, PKCE başlatan tarayıcı, APP_ORIGIN |
+| Dosya açılamıyor | Geçerli oturum, görünür paylaşım ve Storage RLS |
+| Maps çizilmiyor | Frontend browser key, referrer ve Maps JavaScript API |
+| Mekan araması yapılandırılmadı | Backend GOOGLE_PLACES_API_KEY ve Places API (New) |
+| Staj yenilenmiyor | Service-role, ingestion_runs ve bir saatlik claim kilidi |
 
-Kaynaklar: [React/Supabase](https://supabase.com/docs/guides/getting-started/tutorials/with-react), [SMTP](https://supabase.com/docs/guides/auth/auth-smtp), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [Storage](https://supabase.com/docs/guides/storage/security/access-control), [Resend DNS](https://resend.com/docs/dashboard/domains/introduction).
+Kaynaklar: [Supabase redirect izinleri](https://supabase.com/docs/guides/auth/redirect-urls), [Server Auth](https://supabase.com/docs/guides/auth/server-side/advanced-guide), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).

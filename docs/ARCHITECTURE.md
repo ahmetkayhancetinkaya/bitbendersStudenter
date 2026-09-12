@@ -2,38 +2,59 @@
 
 ## İstek ve veri akışı
 
-Tarayıcı React uygulamasını statik sunucudan yükler. HashRouter, tanıtım/kayıt sayfaları ile `/app` ve `/demo` altındaki araçları yönlendirir. `StoreProvider` oturumu izler ve gerçek kullanıcı için Supabase sorgularını yapar. Veritabanı kullanıcı JWT’sini kontrol eder, RLS ile okunabilecek ve değiştirilebilecek satırları sınırlar. Başarılı yazmadan sonra güncel veriler tekrar alınır.
+React arayüzü yalnızca backend'in /api uçlarına istek gönderir. Backend oturumu Supabase Auth ile doğrular, kullanıcının JWT'sini taşıyan istek bazlı bir Supabase client oluşturur ve PostgreSQL RLS kurallarını korur. Normal CRUD ve dosya işlemlerinde service-role kullanılmaz. Kullanıcı kimliği istek gövdesinden alınmaz; doğrulanmış oturumdan eklenir. Güncelleme ve silme ayrıca user_id ile filtrelenir.
 
-Demo yolu bellekte oluşturulan, açıkça etiketli örnekleri kullanır. Sadece gerçek şirket ilanları için dar kapsamlı `public_imported_internships()` RPC’si çağrılır. Anonim ziyaretçi bütçe, takvim veya öğrenci paylaşımlarını bu fonksiyon üzerinden göremez. Demo modunda form kaydetmek gerçek başarı mesajı üretmez; kullanıcıya oturum açması söylenir.
+Tarayıcı → frontend/src/services → backend/src/app.ts → ilgili modules/*/routes.ts → Supabase / harici sağlayıcı.
 
-Google araması farklı bir akıştır: `maps.ts` tarayıcıya resmi Google kütüphanesini yükler, `Place.searchNearby()` seçilen kampüsün etrafını sorgular ve sonuçları yalnızca sayfa belleğinde tutar. Supabase’deki öğrenci önerileri bu sonuçlardan bağımsızdır. Kaynakların puanları karıştırılmaz.
+StoreProvider yalnızca arayüz durumu, yükleme, bildirim ve veri yenilemesini yönetir. Supabase SDK frontend bağımlılığı değildir. Frontend, backend kaynaklarını import etmez. Paylaşılan veri tipleri, API sözleşmeleri, saf para/tarih kuralları ve örnek veri shared paketindedir.
 
-## Kaynak dizini
+Demo bellekte etiketli örnekleri gösterir. /api/public/internships yalnızca dar kapsamlı public_imported_internships RPC'sini çağırır. Demo formları gerçek kayıt oluşturmaz. Supabase yapılandırılmamışken demo yine kullanılabilir.
+
+## Klasörler
 
 ```text
-src/
-  App.tsx                   HashRouter, tanıtım ve modül yolları
-  components/
-    auth.tsx                Kayıt/giriş, callback, profil kapısı
-    layout.tsx              Yan menü, mobil gezinme, üniversite seçimi
-    ui.tsx                  Form, modal, durum ve hata bileşenleri
-    campus-map.tsx          Google haritası ve seçili konum
-    webmcp.tsx              İsteğe bağlı salt okunur kampüs özeti
-  lib/
-    store.tsx               Oturum, veriler, CRUD ve dosyalar
-    types.ts                İlişkisel veri tipleri
-    domain.ts               Para, tarih, yoğunluk, dosya kontrolleri
-    seed.ts / seed-extra.ts  Etiketli ve tekrar üretilebilir örnekler
-    maps.ts                 Google yükleyici ve Places adaptörü
-    place-ranking.ts        Mesafe ve öğrenci uygunluk skoru
-  pages/                    On araç, ana panel, profil ve politika sayfaları
-supabase/
-  migrations/               Şema ve yetki değişiklikleri
-  functions/                Staj toplama fonksiyonu ve kaynak adaptörleri
-scripts/                    Kurulum, toplama, örnek hesap ve gerçek testler
-tests/                      Node/PGlite testleri
-docs/                       Kurulum, mimari, entegrasyon ve kabul rehberleri
+frontend/
+  src/components/          Ortak arayüz, form, gezinme ve Auth ekranları
+  src/pages/               Modül ekranları
+  src/services/            HTTP istemcisi, auth ve veri API çağrıları
+  src/lib/                 React store, harita yükleyici ve sıralama
+  public/                  Statik görseller
+  vite.config.ts           /api proxy ve frontend derlemesi
+backend/
+  src/app.ts               API yönlendirme, CORS/CSRF ve ortak hata yanıtı
+  src/server.ts            Node HTTP adaptörü ve üretimde frontend sunumu
+  src/worker.ts            Cloudflare Worker adaptörü
+  src/config/              Ortam ayarları ve doğrulama
+  src/http/                JSON, sınırlı gövde okuma, hatalar ve çerezler
+  src/integrations/        Supabase client fabrikaları ve ilan adaptörleri
+  src/modules/auth/        Oturum, PKCE, giriş, kayıt ve parola
+  src/modules/data/        Veri okuma, profil, CRUD ve izin verilen alanlar
+  src/modules/storage/     Özel dosya erişimi, boyut ve içerik kontrolü
+  src/modules/internships/ Sabit kaynaklardan toplama ve kalıcı yazma
+  src/modules/places/      Google Places REST isteği
+  scripts/                 Yönetim, seed ve entegrasyon araçları
+  supabase/                Migrationlar, katalog ve isteğe bağlı Edge uyumluluğu
+  tests/                   API, RLS ve kaynak adaptörü testleri
+shared/src/                Tipler, API sözleşmeleri, saf kurallar ve örnekler
+scripts/dev.mjs            İki geliştirme sürecini birlikte başlatır
+docs/                      Kurulum, mimari ve test rehberleri
+dist/client/               Üretilmiş frontend
+dist/server/index.js       Üretilmiş Worker API
 ```
+
+## Oturum ve güven sınırları
+
+Access ve refresh tokenları Path=/api, HttpOnly, SameSite=Lax çerezleridir; HTTPS'te Secure eklenir. API yalnızca minimal user.id/email bilgisini döndürür. Tokenlar React state veya localStorage'a yazılmaz. Parola ve tokenlar loglanmaz. Her kullanıcı isteğinde getUser doğrulaması yapılır; geçersiz/süresi dolmuş JWT refresh token ile backend'de yenilenir. Geçici Auth servis hatasında oturum çerezleri silinmez.
+
+PKCE verifier'ları ve akış indeksi ayrı HttpOnly çerezlerde tutulur. Akış kimliği callback'in sb_flow_id parametresiyle eşlenir; birden fazla bekleyen e-posta bağlantısı birbirini ezmez. Supabase SDK'nin tam oturum JSON'u yalnızca istek belleğinde tutulur. Callback yönlendirmesi sabit APP_ORIGIN kullanır. Sekmeler BroadcastChannel ile yalnızca oturum değişikliği sinyali paylaşır.
+
+Yazma istekleri APP_ORIGIN ile tam eşleşen Origin başlığı gerektirir. CORS yalnızca aynı izinli origin'e credentials izni verir. API yanıtları no-store'dur. Tablo ve alan izin listeleri id, user_id, revision, kaynak alanları ve is_example gibi sunucu alanlarının istemci tarafından seçilmesini engeller. RLS ve veritabanı sütun yetkileri ikinci bağımsız denetim katmanıdır.
+
+Dosyalar notes/listing-images özel depolarındadır. Backend PDF için 10 MB, görseller için 5 MB sınırı uygular; MIME türüne ek olarak dosya imzasını kontrol eder. Dosya yolu backend'de kullanıcı kimliği ve rastgele UUID ile üretilir. İndirme kullanıcının JWT'siyle yapılır; dosya görünürlüğünü Storage RLS belirler. Kalıcı herkese açık dosya URL'si üretilmez.
+
+Staj toplama yalnızca doğrulanmış kullanıcı tarafından tetiklenir. Service-role yalnızca toplama/yönetim katmanında kullanılır. Sabit sağlayıcı listesi ve veritabanındaki atomik bir saatlik claim kilidi korunmuştur. Başarısız kaynak kontrolü mevcut ilanları kapatmaz.
+
+Google haritasını çizmek için Maps JavaScript SDK tarayıcıda kalır. Mekan araması /api/places/nearby üzerinden backend'deki Places API (New) REST çağrısına gider. Tarayıcı Maps anahtarı ile backend Places anahtarı ayrı yapılandırılır. Sonuçlar kalıcı depolanmaz; sadece sayfa belleğinde gösterilir. İstek kategori/konum/yarıçapı sınırlıdır ve 15 saniye zaman aşımı vardır. Demo araması için bu uç herkese açıktır.
 
 ## Veri tablosu haritası
 
@@ -58,34 +79,18 @@ docs/                       Kurulum, mimari, entegrasyon ve kabul rehberleri
 | crowd_locations / crowd_reports | Kampüs alanı ve öğrencinin son durum bildirimi |
 | ingestion_runs | Kaynak kontrol kilidi, sonuç, adet ve hata |
 
-## Sahiplik ve güven sınırları
-
-Kullanıcının arayüzde düğme görmemesi bir güvenlik kuralı değildir. Bütçe, kişisel takvim, takipler ve kaydedilenler veritabanında `auth.uid()` üzerinden filtrelenir. Paylaşılan içerik giriş yapanlara okunabilir; değişiklik yalnızca sahibine izin verir. Profilin minimal görünen adı `members` tablosuna bir trigger ile yansır. Auth e-postaları ortak kimlik tablosuna kopyalanmaz.
-
-Stajlarda kaynak alanları sütun bazlı yetkilerle korunur. Öğrenci kendi ilanını “şirketten toplandı” olarak değiştiremez. Kaynak sağlayıcısı, kaynak anahtarı, kontrol zamanı ve örnek etiketi yönetici tarafından yazılır. Mekan önerilerinde de kullanıcı örnek etiketi gibi yönetici alanlarını seçemez.
-
-Dosya politikaları oturum, kullanıcı klasörü ve bağlı paylaşım görünürlüğünü birlikte denetler. Dosyanın sahibi olmayan biri, henüz yayınlanmamış bir not dosyasını tahmin ederek indiremez. Paylaşılmış dosya yalnızca ilgili içeriği okuyabilen oturumlara açılır.
-
-Sunucu anahtarı yalnızca yönetim scriptlerinde veya Edge Function ortamında kullanılır. İstemci için publishable anahtar yeterlidir. Google tarayıcı anahtarına referrer ve API kısıtları uygulanmalıdır. Google metinleri HTML olarak enjekte edilmez; React metin alanları ve haritada `textContent` kullanılır.
-
 ## Sayısal ve zamansal kurallar
 
-Para tam sayı kuruştur. `12,50` veya `12.50` girişleri 1250 kuruşa çevrilir; ikiden fazla ondalık basamak reddedilir. Bütçe yalnızca seçilen ayın hareketlerini toplar. Büyük tutarlarda güvenli tam sayı sınırı ve veritabanı aralık kısıtı vardır.
+Para tam sayı kuruş, saatli tarihler UTC'dir; arayüz Europe/Istanbul kullanır. Ortak saf kurallar shared/src/domain.ts içindedir. Kritik girdiler API'de ve veritabanı kısıtlarıyla yeniden doğrulanır. Yoğunluk hesabı bir saatten eski ve gelecekteki kayıtları dışlar; her kişinin yalnızca son raporunu sayar.
 
-Saatli tarihler UTC saklanır ve `Europe/Istanbul` ile gösterilir. `datetime-local` girişi Türkiye saati olarak yorumlanır. Sadece gün ifade eden bütçe tarihi `date` olarak tutulur. Yoğunluk hesaplaması gelecekteki ve bir saatten eski raporları dışlar; aynı kişinin en yeni raporunu sayar. Yeni bildirimde zaman sunucuda yenilenir.
+## Hatalar ve yarış durumları
 
-## Yarış durumları ve hatalar
+API hata biçimi {error:{code,message}} ve uygun HTTP durumudur. Servis sırları veya ham sağlayıcı hataları döndürülmez. Form başarısızken açık kalır. Store, epoch ve istek sırası ile önceki kullanıcının veya eski yenilemenin sonucunu dışlar. Oturum geçersizse özel veriler temizlenir. Harita aramaları da istek sırasını kontrol eder.
 
-Store oturum değişimini bir epoch ile takip eder. Eski kullanıcının geç tamamlanan sorgusu yeni oturuma yazılmaz. Yenileme istekleri sıralanır; eski isteğin yeni veriyi ezmesi engellenir. Auth callback’i çift render nedeniyle tekrar tüketilmez. Form hatasında modal açık kalır; kaydetme sürerken tekrar gönderim kapalıdır.
+## Hatırlatmalar ve ölçek
 
-Google aramasında kampüs/kategori değişince eski sorgunun sonucu geçersiz olur. Aynı sayfadan ayrıldıktan sonra dönen sonuç yeni ekrana yazılmaz. Sağlayıcı hatası anlaşılır mesajla gösterilir. Fiyat veya puan eksikse skor uydurulmaz.
+Takvim revizyonu, önceki işi iptal etme, claim/lease ve idempotent payload SQL altyapısı korunmuştur. Gerçek e-posta gönderim işçisi henüz yoktur; e-posta tercihi varsayılan kapalıdır.
 
-## Hatırlatma kuyruğu hazırlığı
+Veriler mevcut hackathon kapsamını korumak için toplu yenilenir. Büyüyen içerikte sayfalama ve modül bazlı yenileme eklenmelidir. Çoklu Node süreçleri/Worker isolate'ları arasında refresh eşgüdümü paylaşımlı değildir; Supabase token yeniden kullanım davranışı geçerlidir. Üretimde özellikle herkese açık Places ve hesap uçlarına reverse proxy/Cloudflare düzeyinde hız ve kota sınırları uygulanmalıdır. Periyodik staj toplama ayrıca zamanlayıcı gerektirir.
 
-Takvim değişikliği bir revizyon üretir. Önceki bekleyen iş iptal edilir; tamamlanan veya silinen tarih gönderime uygun değildir. Claim işlemi lease ve kilit kullanır. Gönderim payload’ı ilk hazırlamada sabitlenir; yeniden denemede farklı içerikle aynı idempotency anahtarının kullanılması önlenir.
-
-Bu SQL altyapısı test edilmiştir ancak dış e-posta işçisi ve gerçek teslim testi bu sürümde yoktur. `sent` durumu yalnızca sağlayıcının doğrulanmış başarılı yanıtı sonrasında yazılmalıdır. Servis kurulmadan e-posta özelliği açık gösterilmemelidir.
-
-## Ölçek sınırları
-
-Hackathon ölçeğinde ortak tablolar toplu yenilenir. Çok sayıda kullanıcı için sunucu tarafı sayfalama, üniversiteye göre sorgu daraltma ve seçili tablo yenilemesi eklenmelidir. Şu an polling kullanılır; gerçek zamanlı abonelik zorunlu değildir. Google araması en fazla 20 sonuç döndürür ve kapsamlı bir şehir işletme envanteri sayılmaz.
+Kaynaklar: [Supabase server auth](https://supabase.com/docs/guides/auth/server-side/advanced-guide), [PKCE](https://supabase.com/docs/guides/auth/sessions/pkce-flow), [Google Places REST](https://developers.google.com/maps/documentation/places/web-service/nearby-search).

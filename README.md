@@ -4,7 +4,7 @@ KampüsKit; öğrencilerin ders, kariyer, bütçe, barınma ve kampüs yaşamı 
 
 **[Canlı uygulama](https://kampuskit.arsenalighieri.chatgpt.site/)** · **[Hesapsız demo](https://kampuskit.arsenalighieri.chatgpt.site/#/demo)** · **[Gerçek hesapla giriş](https://kampuskit.arsenalighieri.chatgpt.site/#/giris)**
 
-Bu depo artık yalnızca başlangıç iskeletini değil, çalışan arayüzü, Supabase şemasını, staj toplama kodlarını, örnek içerik üretimini, testleri ve ayrıntılı kurulum belgelerini içerir. API anahtarları ve demo hesabının şifresi kaynak kodda bulunmaz.
+Bu depo artık yalnızca başlangıç iskeletini değil, çalışan arayüzü, Supabase şemasını, staj toplama kodlarını, örnek içerik üretimini, testleri ve ayrıntılı kurulum belgelerini içerir. API anahtarları ve demo hesabının şifresi kaynak kodda bulunmaz. Kod npm workspaces ile frontend, backend ve shared paketlerine ayrılmıştır; Supabase erişimi backend üzerinden gerçekleşir.
 
 ## Ayrıntılı belgeler
 
@@ -12,6 +12,7 @@ Bu depo artık yalnızca başlangıç iskeletini değil, çalışan arayüzü, S
 |---|---|
 | [Kurulum ve Supabase](docs/SETUP.md) | Yerel ortam, migrationlar, Auth, Storage, SMTP ve demo hesabı |
 | [Mimari ve veri modeli](docs/ARCHITECTURE.md) | Bileşenler, tablolar, veri akışı ve erişim kuralları |
+| [Backend API](docs/API.md) | Uçlar, oturum çerezleri, istek sözleşmeleri ve hata durumları |
 | [Staj ve Maps entegrasyonları](docs/INTEGRATIONS.md) | Kaynaklar, algoritmalar, Google Cloud ve zamanlama |
 | [Testler ve demo senaryosu](docs/TESTING.md) | Kabul kontrolleri, doğrulanmış davranışlar ve sınırlar |
 | [Katkı rehberi](CONTRIBUTING.md) | Geliştirme düzeni, yeni modül ve veri kaynağı ekleme |
@@ -20,7 +21,7 @@ Bu depo artık yalnızca başlangıç iskeletini değil, çalışan arayüzü, S
 
 12 Eylül 2026 tarihinde çekirdek Supabase şeması ve keşif migrationları uzak projeye uygulandı. E-posta/parola ile oturum, profil, gerçek kayıt saklama ve veritabanı erişim kuralları çalışıyor. Üç geçici hesapla bütçe, takvim, ortak paylaşım ve özel dosya erişimi test edildi; test hesapları temizlendi. Kullanıcı kayıtları sayfa yenilemesinden sonra Supabase üzerinden yeniden yüklenir.
 
-Google Maps bağlantısı tarayıcı anahtarıyla çalışır. Mekanlar kampüs konumu etrafında Google Places API (New) üzerinden aranır. Öğrencilerin kendi önerileri ayrı bir Supabase tablosunda saklanır. Google sonuçları ile temsili mekanlar aynı kaynakmış gibi gösterilmez.
+Google haritası tarayıcı Maps anahtarıyla çizilir; mekan araması backend Places anahtarıyla çalışır. Mekanlar kampüs konumu etrafında Google Places API (New) üzerinden aranır. Öğrencilerin kendi önerileri ayrı bir Supabase tablosunda saklanır. Google sonuçları ile temsili mekanlar aynı kaynakmış gibi gösterilmez.
 
 İki staj adaptörü altı şirket panosunu kontrol eder. İlk başarılı toplamada **10 gerçek ilan** alındı: Insider One 3, Lalamove 1, Peak 1, Constructor 5; Dream Games ve Udemy panolarında o kontrolde eşleşen ilan yoktu. Bu sayılar canlı envanter garantisi değildir; kaynak kontrol zamanı ilanlarda gösterilir. Türkiye filtresi varsayılandır, diğer ülkeler ayrıca seçilebilir.
 
@@ -87,7 +88,9 @@ Kişisel tarihler oluşturulur, düzenlenir, silinir ve tamamlandı işaretlenir
 | Katman | Teknoloji | Amaç |
 |---|---|---|
 | Arayüz | React, TypeScript | Bileşenler ve tipli veri modeli |
-| Derleme | Vite | Geliştirme sunucusu ve statik çıktı |
+| Backend | Node.js / Cloudflare Worker, TypeScript | /api, oturum, CRUD, dosya ve harici servisler |
+| Ortak paket | shared | Veri tipleri, API sözleşmeleri ve saf kurallar |
+| Derleme | Vite | Ayrı frontend ve Worker çıktısı |
 | Stil | Tailwind CSS, proje CSS’i | Mobil uyum ve ortak görsel dil |
 | Yönlendirme | React Router / HashRouter | Statik sunucuda bağlantı yenileme |
 | Hesap | Supabase Auth | Oturum, doğrulama ve parola akışları |
@@ -107,7 +110,7 @@ cd bitbendersStudenter
 npm ci
 ```
 
-`.env.example` dosyasını `.env.local` olarak kopyala ve kendi Supabase/Google tarayıcı anahtarlarını gir.
+`frontend/.env.example` → `frontend/.env.local`, `backend/.env.example` → `backend/.env.local` olarak kopyala. Supabase URL ve anahtarlarını yalnızca backend ortamına gir. Google harita tarayıcı anahtarı frontend’de, Places sunucu anahtarı backend’de tutulur. Ayrıntılar [kurulum rehberinde](docs/SETUP.md).
 
 ```bash
 npm run dev
@@ -126,7 +129,7 @@ npm run seed:examples
 npm run demo:create
 ```
 
-Script özel olarak istenen demo hesabını doğrulanmış olarak oluşturur, e-posta göndermez ve normal kullanıcıların doğrulama zorunluluğunu kapatmaz. Şifre yalnızca Git’in yok saydığı `.artifacts/demo-account.json` dosyasına yazılır. Aynı dosya mevcutsa yeni hesap yaratılmaz.
+Script özel olarak istenen demo hesabını doğrulanmış olarak oluşturur, e-posta göndermez ve normal kullanıcıların doğrulama zorunluluğunu kapatmaz. Şifre yalnızca Git’in yok saydığı `backend/.artifacts/demo-account.json` dosyasına yazılır. Aynı dosya mevcutsa yeni hesap yaratılmaz.
 
 Hesapta 10 gelir/gider hareketi, 6 kişisel tarih, kulüp takibi, üç kaydedilmiş gerçek staj ve kendisine ait örnek soru bulunur. Demo adresi gerçek posta kutusu değildir; parola sıfırlama e-postası almak için kullanılmamalıdır. Şifreyi kamuya açık README veya issue içine koyma.
 

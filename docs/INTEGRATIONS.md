@@ -2,7 +2,7 @@
 
 ## Neden iki farklı bağlantı?
 
-Stajlar şirketlerin kamuya açık iş ilanı API’lerinden alınır ve kaynak bağlantısıyla Supabase’e yazılır. Google mekan verileri ise Google Maps/Places’in resmi tarayıcı API’siyle anlık aranır. Google Maps sayfasının HTML’ini kazıyan veya korumaları aşan bir scraper bulunmaz. Kaynakların farklı kullanım ve saklama ihtiyaçları uygulamada ayrı tutulur.
+Stajlar şirketlerin kamuya açık iş ilanı API’lerinden alınır ve kaynak bağlantısıyla Supabase’e yazılır. Google mekan verileri ise backend üzerinden Google Places API (New) REST servisiyle anlık aranır; harita tarayıcı SDK’sıyla çizilir. Google Maps sayfasının HTML’ini kazıyan veya korumaları aşan bir scraper bulunmaz. Kaynakların farklı kullanım ve saklama ihtiyaçları uygulamada ayrı tutulur.
 
 ## Staj kaynakları
 
@@ -15,7 +15,7 @@ Stajlar şirketlerin kamuya açık iş ilanı API’lerinden alınır ve kaynak 
 | Greenhouse | constructortech | Constructor |
 | Greenhouse | udemybedi | Udemy |
 
-Kaynak tanımları `supabase/functions/_shared/internships.ts` içindedir. Lever için kamuya açık postings uç noktası, Greenhouse için Job Board API kullanılır. Bir panoda staj bulunmaması hata değildir; sıfır sonuç da başarılı kontrol olarak kaydedilir. İlk kontrolde 10 ilan bulunmuştur; sonradan aynı sayının korunması beklenmez.
+Kaynak tanımları `backend/src/integrations/internship-sources.ts` içindedir. Lever için kamuya açık postings uç noktası, Greenhouse için Job Board API kullanılır. Bir panoda staj bulunmaması hata değildir; sıfır sonuç da başarılı kontrol olarak kaydedilir. İlk kontrolde 10 ilan bulunmuştur; sonradan aynı sayının korunması beklenmez.
 
 ### Normalleştirme
 
@@ -31,15 +31,17 @@ Lever sayfaları limit/skip ile dolaşılır. İstek zaman aşımı, azami sayfa
 npm run collect:internships
 ```
 
-Bu komut veri tabanına yazmadan toplar; sonuç ve hata bilgisi `.artifacts/internship-import.json` içindedir.
+Bu komut veri tabanına yazmadan toplar; sonuç ve hata bilgisi `backend/.artifacts/internship-import.json` içindedir.
 
 ```bash
 npm run collect:persist
 ```
 
-Bu komut `.env.server.local` anahtarını kullanarak upsert yapar. Kaynak başına atomik bir saatlik bekleme kilidi vardır. Aynı anda iki istemci veya script çalışsa da aynı kaynağı gereksiz tekrar toplamaz. Kilit süreli olduğundan yarıda kalan bir işlem sonsuza kadar kaynağı engellemez.
+Bu komut `backend/.env.local` anahtarını kullanarak upsert yapar. Kaynak başına atomik bir saatlik bekleme kilidi vardır. Aynı anda iki istemci veya script çalışsa da aynı kaynağı gereksiz tekrar toplamaz. Kilit süreli olduğundan yarıda kalan bir işlem sonsuza kadar kaynağı engellemez.
 
-### Edge Function
+### Backend API ve isteğe bağlı Edge uyumluluğu
+
+Arayüz yenileme düğmesi artık POST /api/internships/sync çağırır. Auth backend’de doğrulanır; modules/internships/service.ts aynı sabit adaptörlerle importu yapar. Edge Function yayını normal uygulama için gerekli değildir. Aşağıdaki eski Edge akışı bağımsız cron uyumluluğu için korunur; dashboard tek dosya hazırlığı backend kaynağını gömer.
 
 `sync-internships` aynı adaptörleri sunucuda çalıştırır. Giriş yapan kullanıcı “Kaynakları yenile” düğmesiyle çağırabilir. Fonksiyon oturum tokenını Supabase Auth `getUser` ile doğrular. Servis çağrısı için kendi ortamındaki servis anahtarını da kabul eder. `verify_jwt=false` ayarı tek başına anonim yetki vermez; doğrulama fonksiyon kodundadır.
 
@@ -49,7 +51,7 @@ CLI ile yayın:
 supabase functions deploy sync-internships --project-ref YOUR_PROJECT_REF --no-verify-jwt
 ```
 
-Dashboard editörü için `npm run edge:prepare` tek dosyalık `.artifacts/sync-internships.ts` oluşturur. Bu dosya sır içermez; `index.ts` olarak yapıştırılıp `sync-internships` adıyla yayınlanabilir. Kaynak veya adaptör değişirse yeniden hazırlanmalıdır.
+Dashboard editörü için `npm run edge:prepare` tek dosyalık `backend/.artifacts/sync-internships.ts` oluşturur. Bu dosya sır içermez; `index.ts` olarak yapıştırılıp `sync-internships` adıyla yayınlanabilir. Kaynak veya adaptör değişirse yeniden hazırlanmalıdır.
 
 ### Düzenli toplama
 
@@ -82,7 +84,7 @@ Yeni kampüs eklenirken üniversite ilişkisi, koordinatlar ve kaynak URL’si b
 
 ## Arama ve sıralama
 
-`Place.searchNearby()` en yakın 20 sonuca kadar getirir. Tür cafe, restaurant veya library; yarıçap 1, 2, 3 veya 5 km seçilir. İstenen alanlar kimlik, ad, adres, konum, fiyat seviyesi, puan, puan sayısı, Maps URL’si ve kaynak atıflarıdır. Gereksiz fotoğraf/yorum içeriği istenmez.
+`POST /api/places/nearby → Places REST searchNearby` en yakın 20 sonuca kadar getirir. Tür cafe, restaurant veya library; yarıçap 1, 2, 3 veya 5 km seçilir. İstenen alanlar kimlik, ad, adres, konum, fiyat seviyesi, puan, puan sayısı, Maps URL’si ve kaynak atıflarıdır. Gereksiz fotoğraf/yorum içeriği istenmez.
 
 Haversine hesabı iki nokta arasındaki kuş uçuşu mesafeyi metre olarak verir. Fiyat seviyesi 0–4 aralığına dönüştürülür; ücretsiz 0 geçerli bir değerdir, eksik bilgi `null` olarak ayrı tutulur.
 
@@ -107,6 +109,6 @@ Gizlilik ve kullanım sayfaları herkese açıktır. Google gizlilik ve ek Maps 
 
 - [Lever Postings API](https://github.com/lever/postings-api)
 - [Greenhouse Job Board API](https://developers.greenhouse.io/job-board.html)
-- [Google Nearby Search](https://developers.google.com/maps/documentation/javascript/nearby-search)
+- [Google Nearby Search](https://developers.google.com/maps/documentation/places/web-service/nearby-search)
 - [Google Places politikaları](https://developers.google.com/maps/documentation/places/web-service/policies)
 - [Supabase zamanlanmış fonksiyonlar](https://supabase.com/docs/guides/functions/schedule-functions)

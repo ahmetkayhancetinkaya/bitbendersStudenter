@@ -4,6 +4,9 @@ dist
 .env
 .env.*
 !.env.example
+!frontend/.env.example
+!backend/.env.example
+**/.artifacts/
 .sites-runtime/
 .artifacts/
 coverage/

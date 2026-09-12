@@ -2,23 +2,26 @@
 
 ## Otomatik testler
 
-`npm test` Node test runner ile üç dosyayı çalıştırır. Ağ veya gerçek hesap gerektirmez. Veritabanı testleri PGlite içinde Supabase’in Auth/Storage yardımcılarını asgari biçimde taklit eder, gerçek migration SQL’ini yükler ve ayrı rollerle sorgular. Bu, gerçek Supabase testi yerine geçmez; RLS regresyonlarını hızlı yakalamak içindir.
+`npm test` Node test runner ile frontend ve backend test dosyalarını çalıştırır. Ağ veya gerçek hesap gerektirmez. Veritabanı testleri PGlite içinde Supabase’in Auth/Storage yardımcılarını asgari biçimde taklit eder, gerçek migration SQL’ini yükler ve ayrı rollerle sorgular. Bu, gerçek Supabase testi yerine geçmez; RLS regresyonlarını hızlı yakalamak içindir.
 
 | Dosya | Doğrulanan davranış |
 |---|---|
-| database.test.mjs | Üç hesapta bütçe izolasyonu, ortak içerik, sahiplik, özel dosyalar, takvim revizyonu, claim kilidi, kaynak alanı koruması |
-| internships.test.mjs | Staj sözcük sınıflaması, bilinmeyen alanlar, güvenli kaynak URL’leri, sayfalama, tekrarlar ve hatalı besleme |
-| place-ranking.test.mjs | Haversine metre hesabı, eksik fiyat, ücretsiz seviye, fiyat/mesafe etkisi ve az yorum düzeltmesi |
+| backend/tests/api.test.mjs | Backend oturum/PKCE, HttpOnly/Secure, CSRF/CORS, refresh, RLS kimliği, korumalı alanlar ve dosya sınırları |
+| backend/tests/database.test.mjs | Üç hesapta bütçe izolasyonu, ortak içerik, sahiplik, özel dosyalar, takvim revizyonu, claim kilidi, kaynak alanı koruması |
+| backend/tests/internships.test.mjs | Staj sözcük sınıflaması, bilinmeyen alanlar, güvenli kaynak URL’leri, sayfalama, tekrarlar ve hatalı besleme |
+| frontend/place-ranking.test.mjs | Haversine metre hesabı, eksik fiyat, ücretsiz seviye, fiyat/mesafe etkisi ve az yorum düzeltmesi |
 
-12 Eylül 2026 çalıştırmasında 13 test sayımı başarılıdır; Node üst test grubunu da bu sayıya dahil eder. `npm run build` ayrıca TypeScript kontrolünü ve üretim derlemesini yapar. `npm run lint` proje lint aracını çalıştırır.
+Yeni backend API testleri sağlayıcı isteklerini fixture ile taklit eder; gerçek Supabase/Google erişimi veya e-posta teslimi kanıtı değildir. Node üst test grubunu da test sayısına dahil eder. `npm run build` ayrıca TypeScript kontrolünü ve üretim derlemesini yapar. `npm run lint` proje lint aracını çalıştırır.
 
 ## Gerçek Supabase testi
+
+Aşağıdaki canlı test ve Google/Edge sonuçları ayrım öncesi sürümün tarihsel kayıtlarıdır. Yeni API ile canlı hesap ve e-posta akışı, kendi yetkili ortamında ayrıca test edilmelidir. Bu çalışma sırasında yerel gerçek anahtar bulunmadığından canlı entegrasyon testi yeniden çalıştırılmamıştır.
 
 ```bash
 npm run test:integration
 ```
 
-Bu komut `.env.local` publishable anahtarı ve `.env.server.local` sunucu anahtarını kullanır. Üç geçici hesap yaratır, parola ile giriş yapar, iki üniversiteye profil ekler, bütçe kaydı yazar, çıkış/girişten sonra aynı kaydı okur ve başka hesabın okuyup değiştiremediğini doğrular.
+Bu komut `backend/.env.local` içindeki publishable ve sunucu anahtarlarını kullanır. Üç geçici hesap yaratır, parola ile giriş yapar, iki üniversiteye profil ekler, bütçe kaydı yazar, çıkış/girişten sonra aynı kaydı okur ve başka hesabın okuyup değiştiremediğini doğrular.
 
 Ardından özel bir PDF nesnesi yükler. Paylaşıma bağlanmadan başka hesap indirmemelidir. Yayınlanmış notla ilişkilendirildiğinde aynı dosyayı ilgili ortak içeriği okuyabilen hesap indirebilmelidir. Başka hesabın kişisel takvime erişemediği ve istemcinin izin verilen hatırlatma durum alanlarını okuyabildiği de kontrol edilir.
 
@@ -67,4 +70,4 @@ Hesap `Deniz · Demo` adıyla İTÜ Bilgisayar Mühendisliği profiline sahiptir
 
 E-posta servisi tamamlanmadığı sürece teslim testini geçmiş gibi raporlama. Google fiyat seviyesini TL fiyatı gibi sunma. Örnek kulüp/ilan/kişi kayıtlarını doğrulanmış gerçek içerik olarak adlandırma. Yoğunlukta boş veri, yanlış güncel veri göstermekten daha doğru bir ürün davranışıdır.
 
-Lint çalıştırması hata vermeden tamamlandı; mevcut kodda React hook, tarih hesaplama ve Fast Refresh uyarıları bulunuyor. Üretim derleyicisi tek JavaScript parçasının 500 kB sınırını aştığını bildiriyor; uygulama çalışmasını engellemez, ileri sürümde route bazlı parçalara ayırma önerilir.
+Lint çalıştırması hata vermeden tamamlandı; mevcut kodda React hook, tarih hesaplama ve Fast Refresh uyarıları bulunuyor. Supabase SDK frontend paketinden çıkarılmıştır; frontend derlemesi ve Worker derlemesi ayrı doğrulanır.
