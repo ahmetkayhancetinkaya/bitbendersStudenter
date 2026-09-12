@@ -93,4 +93,16 @@ Takvim revizyonu, önceki işi iptal etme, claim/lease ve idempotent payload SQL
 
 Veriler mevcut hackathon kapsamını korumak için toplu yenilenir. Büyüyen içerikte sayfalama ve modül bazlı yenileme eklenmelidir. Çoklu Node süreçleri/Worker isolate'ları arasında refresh eşgüdümü paylaşımlı değildir; Supabase token yeniden kullanım davranışı geçerlidir. Üretimde özellikle herkese açık Places ve hesap uçlarına reverse proxy/Cloudflare düzeyinde hız ve kota sınırları uygulanmalıdır. Periyodik staj toplama ayrıca zamanlayıcı gerektirir.
 
+<<<<<<< HEAD
 Kaynaklar: [Supabase server auth](https://supabase.com/docs/guides/auth/server-side/advanced-guide), [PKCE](https://supabase.com/docs/guides/auth/sessions/pkce-flow), [Google Places REST](https://developers.google.com/maps/documentation/places/web-service/nearby-search).
+=======
+Takvim değişikliği bir revizyon üretir. Önceki bekleyen iş iptal edilir; tamamlanan veya silinen tarih gönderime uygun değildir. Claim işlemi lease ve kilit kullanır. Gönderim payload’ı ilk hazırlamada sabitlenir; yeniden denemede farklı içerikle aynı idempotency anahtarının kullanılması önlenir.
+
+Bu SQL altyapısı test edilmiştir ancak dış e-posta işçisi ve gerçek teslim testi bu sürümde yoktur. `sent` durumu yalnızca sağlayıcının doğrulanmış başarılı yanıtı sonrasında yazılmalıdır. Servis kurulmadan e-posta özelliği açık gösterilmemelidir.
+
+## Ölçek sınırları
+
+Hackathon ölçeğinde ortak tablolar toplu yenilenir. Çok sayıda kullanıcı için sunucu tarafı sayfalama, üniversiteye göre sorgu daraltma ve seçili tablo yenilemesi eklenmelidir. Şu an polling kullanılır; gerçek zamanlı abonelik zorunlu değildir. Google araması en fazla 20 sonuç döndürür ve kapsamlı bir şehir işletme envanteri sayılmaz.
+
+Giriş ekranının servis kontrolü geçici hatalarda üç kez denenir; yine erişilemiyorsa kullanıcı form girdisini kaybetmeden yeniden deneyebilir. Bağlantı hatası veritabanı kesinlikle kurulmamış gibi yorumlanmaz.
+>>>>>>> 9559dcc3907dbbd385d082e7812eacaf6968ac0f
